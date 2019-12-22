@@ -7,7 +7,7 @@ import requests
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 
-class LanZouCloud(object):
+class LanZouCloud(object, proxy=None):
     FAILED = -1
     SUCCESS = 0
     ID_ERROR = 1
@@ -18,7 +18,7 @@ class LanZouCloud(object):
     URL_INVALID = 6
     FILE_CANCELLED = 7
 
-    def __init__(self):
+    def __init__(self, proxy=None):
         self._session = requests.Session()
         self._file_id_length = 8  # 目前文件id长度
         self._guise_suffix = '.dll'  # 不支持的文件伪装后缀
@@ -35,12 +35,16 @@ class LanZouCloud(object):
             'Referer': 'https://www.lanzous.com',
             'Accept-Language': 'zh-CN,zh;q=0.9',  # 提取直连必需设置这个，否则拿不到数据
         }
+        if proxy is None:
+            self._proxy = {'http': None, 'https': None}
+        else:
+            self._proxy = proxy
 
     def _get(self, url, **kwargs):
-        return self._session.get(url=url, headers=self._headers, timeout=self._timeout, **kwargs)
+        return self._session.get(url=url, proxies=self._proxy, verify=False, headers=self._headers, timeout=self._timeout, **kwargs)
 
     def _post(self, url, data, **kwargs):
-        return self._session.post(url=url, data=data, headers=self._headers, timeout=self._timeout, **kwargs)
+        return self._session.post(url=url, proxies=self._proxy, verify=False, data=data, headers=self._headers, timeout=self._timeout, **kwargs)
 
     def is_file_url(self, share_url):
         """判断是否为文件的分享链接"""
@@ -64,9 +68,9 @@ class LanZouCloud(object):
         """登录蓝奏云控制台"""
         login_data = {"action": "login", "task": "login", "username": username, "password": passwd}
         try:
-            index = self._session.get(self._account_url).text
+            index = self._session.get(url=self._account_url, proxies=self._proxy, verify=False).text
             login_data['formhash'] = re.findall(r'name="formhash" value="(.+?)"', index)[0]
-            html = self._session.post(self._account_url, login_data).text
+            html = self._session.post(url=self._account_url, proxies=self._proxy, verify=False, data=login_data).text
             return LanZouCloud.SUCCESS if '登录成功' in html else LanZouCloud.FAILED
         except (requests.RequestException, IndexError):
             return LanZouCloud.FAILED
@@ -164,7 +168,7 @@ class LanZouCloud(object):
         folder_list = {}
         try:
             url = self._mydisk_url + '?item=files&action=index&folder_node=1&folder_id=' + str(folder_id)
-            for k, v in re.findall(r'&nbsp;(.+?)</a>&nbsp;.+folkey\((.+?)\)', self._session.get(url).text):
+            for k, v in re.findall(r'&nbsp;(.+?)</a>&nbsp;.+folkey\((.+?)\)', self._session.get(url=url, proxies=self._proxy, verify=False, ).text):
                 folder_list[k.replace('&amp;', '&')] = int(v)  # 文件夹名 : id
             return folder_list
         except requests.RequestException:
@@ -341,7 +345,7 @@ class LanZouCloud(object):
 
         try:
             monitor = MultipartEncoderMonitor(post_data, _call_back)
-            result = self._session.post('http://pc.woozooo.com/fileup.php', data=monitor, headers=tmp_header).json()
+            result = self._session.post('http://pc.woozooo.com/fileup.php', proxies=self._proxy, verify=False, data=monitor, headers=tmp_header).json()
             if result["zt"] == 0: return LanZouCloud.FAILED  # 上传失败
             file_id = result["text"][0]["id"]
             # 蓝奏云禁止用户连续上传 100M 的文件，因此需要上传一个 100M 的文件，然后上传一个“假文件”糊弄过去
