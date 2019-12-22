@@ -7,7 +7,7 @@ import requests
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 
-class LanZouCloud(object, proxy=None):
+class LanZouCloud(object):
     FAILED = -1
     SUCCESS = 0
     ID_ERROR = 1
