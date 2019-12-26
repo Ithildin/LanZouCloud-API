@@ -18,8 +18,9 @@ class LanZouCloud(object):
     URL_INVALID = 6
     FILE_CANCELLED = 7
 
-    def __init__(self, proxy=None):
+    def __init__(self, cookies_dict, proxy=None):
         self._session = requests.Session()
+        self._session.cookies = requests.utils.cookiejar_from_dict(cookies_dict, cookiejar=None, overwrite=True)
         self._file_id_length = 8  # 目前文件id长度
         self._guise_suffix = '.dll'  # 不支持的文件伪装后缀
         self._fake_file_prefix = '__fake__'  # 假文件前缀
