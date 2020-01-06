@@ -18,9 +18,8 @@ class LanZouCloud(object):
     URL_INVALID = 6
     FILE_CANCELLED = 7
 
-    def __init__(self, cookies_dict, proxy=None):
+    def __init__(self, cookies_dict=None, proxy=None):
         self._session = requests.Session()
-        self._session.cookies = requests.utils.cookiejar_from_dict(cookies_dict, cookiejar=None, overwrite=True)
         self._file_id_length = 8  # 目前文件id长度
         self._guise_suffix = '.dll'  # 不支持的文件伪装后缀
         self._fake_file_prefix = '__fake__'  # 假文件前缀
@@ -36,6 +35,8 @@ class LanZouCloud(object):
             'Referer': 'https://www.lanzous.com',
             'Accept-Language': 'zh-CN,zh;q=0.9',  # 提取直连必需设置这个，否则拿不到数据
         }
+        if cookies_dict is not None:
+            self._session.cookies = requests.utils.cookiejar_from_dict(cookies_dict, cookiejar=None, overwrite=True)
         if proxy is None:
             self._proxy = {'http': None, 'https': None}
         else:
